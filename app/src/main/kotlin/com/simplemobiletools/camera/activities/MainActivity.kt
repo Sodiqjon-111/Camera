@@ -1,7 +1,10 @@
 package com.simplemobiletools.camera.activities
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.graphics.Picture
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
@@ -15,6 +18,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
 import com.simplemobiletools.camera.BuildConfig
 import com.simplemobiletools.camera.R
+import com.simplemobiletools.camera.UploadImageActivity
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.camera.helpers.*
 import com.simplemobiletools.camera.implementations.MyCameraImpl
@@ -25,6 +29,7 @@ import com.simplemobiletools.commons.extensions.*
 import com.simplemobiletools.commons.helpers.*
 import com.simplemobiletools.commons.models.Release
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.ArrayList
 
 class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
     private val FADE_DELAY = 5000L
@@ -44,17 +49,24 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
     private var mIsHardwareShutterHandled = false
     private var mCurrVideoRecTimer = 0
     var mLastHandledOrientation = 0
+    private var i = 0
+    lateinit var picture: Array<String?>
 
+
+    @SuppressLint("MissingSuperCall")
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
 
         useDynamicTheme = false
         super.onCreate(savedInstanceState)
         appLaunched(BuildConfig.APPLICATION_ID)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
+        setContentView(R.layout.activity_main)
 
         initVariables()
         tryInitCamera()
@@ -63,6 +75,7 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         setupOrientationEventListener()
     }
 
+    @SuppressLint("MissingSuperCall")
     override fun onResume() {
         super.onResume()
         if (hasStorageAndCameraPermissions()) {
@@ -105,6 +118,7 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         }
     }
 
+    @SuppressLint("MissingSuperCall")
     override fun onDestroy() {
         super.onDestroy()
         mPreview = null
@@ -144,7 +158,6 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         }
         return super.onKeyUp(keyCode, event)
     }
-
     private fun hideIntentButtons() {
         toggle_photo_video.beGone()
         settings.beGone()
@@ -169,7 +182,8 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         }
     }
 
-    private fun isImageCaptureIntent() = intent?.action == MediaStore.ACTION_IMAGE_CAPTURE || intent?.action == MediaStore.ACTION_IMAGE_CAPTURE_SECURE
+    private fun isImageCaptureIntent() =
+        intent?.action == MediaStore.ACTION_IMAGE_CAPTURE || intent?.action == MediaStore.ACTION_IMAGE_CAPTURE_SECURE
 
     private fun checkImageCaptureIntent() {
         if (isImageCaptureIntent()) {
@@ -191,10 +205,14 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
     }
 
     private fun initializeCamera() {
-        setContentView(R.layout.activity_main)
         initButtons()
 
-        (btn_holder.layoutParams as RelativeLayout.LayoutParams).setMargins(0, 0, 0, (navigationBarHeight + resources.getDimension(R.dimen.activity_margin)).toInt())
+        (btn_holder.layoutParams as RelativeLayout.LayoutParams).setMargins(
+            0,
+            0,
+            0,
+            (navigationBarHeight + resources.getDimension(R.dimen.activity_margin)).toInt()
+        )
 
         checkVideoCaptureIntent()
         mPreview = CameraPreview(this, camera_texture_view, mIsInPhotoMode)
@@ -202,7 +220,9 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         checkImageCaptureIntent()
         mPreview?.setIsImageCaptureIntent(isImageCaptureIntent())
 
-        val imageDrawable = if (config.lastUsedCamera == mCameraImpl.getBackCameraId().toString()) R.drawable.ic_camera_front_vector else R.drawable.ic_camera_rear_vector
+        val imageDrawable = if (config.lastUsedCamera == mCameraImpl.getBackCameraId()
+                .toString()
+        ) R.drawable.ic_camera_front_vector else R.drawable.ic_camera_rear_vector
         toggle_camera.setImageResource(imageDrawable)
 
         mFocusCircleView = FocusCircleView(applicationContext)
@@ -212,7 +232,8 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         mFadeHandler = Handler()
         setupPreviewImage(true)
 
-        val initialFlashlightState = if (config.turnFlashOffAtStartup) FLASH_OFF else config.flashlightState
+        val initialFlashlightState =
+            if (config.turnFlashOffAtStartup) FLASH_OFF else config.flashlightState
         mPreview!!.setFlashlightState(initialFlashlightState)
         updateFlashlightState(initialFlashlightState)
     }
@@ -221,7 +242,10 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         toggle_camera.setOnClickListener { toggleCamera() }
         last_photo_video_preview.setOnClickListener { showLastMediaPreview() }
         toggle_flash.setOnClickListener { toggleFlash() }
-        shutter.setOnClickListener { shutterPressed() }
+        shutter.setOnClickListener {
+            i++
+            shutterPressed()
+        }
         settings.setOnClickListener { launchSettings() }
         toggle_photo_video.setOnClickListener { handleTogglePhotoVideo() }
         change_resolution.setOnClickListener { mPreview?.showChangeResolutionDialog() }
@@ -235,7 +259,8 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
 
     private fun showLastMediaPreview() {
         if (mPreviewUri != null) {
-            val path = applicationContext.getRealPathFromURI(mPreviewUri!!) ?: mPreviewUri!!.toString()
+            val path =
+                applicationContext.getRealPathFromURI(mPreviewUri!!) ?: mPreviewUri!!.toString()
             openPathIntent(path, false, BuildConfig.APPLICATION_ID)
         }
     }
@@ -270,9 +295,26 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         if (mIsInPhotoMode) {
             toggleBottomButtons(true)
             mPreview?.tryTakePicture()
-            capture_black_screen.animate().alpha(0.8f).setDuration(CAPTURE_ANIMATION_DURATION).withEndAction {
-                capture_black_screen.animate().alpha(0f).setDuration(CAPTURE_ANIMATION_DURATION).start()
-            }.start()
+            if (i == 1) {
+                truc_images.setImageResource(R.drawable.truc2)
+                count_number.setText("4")
+            } else if (i == 2) {
+                truc_images.setImageResource(R.drawable.truc3)
+                count_number.setText("3")
+            } else if (i == 3) {
+                truc_images.setImageResource(R.drawable.truc4)
+                count_number.setText("2")
+            } else if (i == 4) {
+                truc_images.setImageResource(R.drawable.truc5)
+                count_number.setText("1")
+            } else {
+                startActivity(Intent(this, UploadImageActivity::class.java))
+            }
+            capture_black_screen.animate().alpha(0.8f).setDuration(CAPTURE_ANIMATION_DURATION)
+                .withEndAction {
+                    capture_black_screen.animate().alpha(0f).setDuration(CAPTURE_ANIMATION_DURATION)
+                        .start()
+                }.start()
         } else {
             mPreview?.toggleRecording()
         }
@@ -365,7 +407,8 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
     }
 
     private fun setupPreviewImage(isPhoto: Boolean) {
-        val uri = if (isPhoto) MediaStore.Images.Media.EXTERNAL_CONTENT_URI else MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        val uri =
+            if (isPhoto) MediaStore.Images.Media.EXTERNAL_CONTENT_URI else MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         val lastMediaId = getLatestMediaId(uri)
         if (lastMediaId == 0L) {
             return
@@ -454,44 +497,55 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
         toggle_camera?.beInvisibleIf(mCameraImpl.getCountOfCameras() ?: 1 <= 1)
     }
 
-    private fun hasStorageAndCameraPermissions() = hasPermission(PERMISSION_WRITE_STORAGE) && hasPermission(PERMISSION_CAMERA)
+    private fun hasStorageAndCameraPermissions() =
+        hasPermission(PERMISSION_WRITE_STORAGE) && hasPermission(PERMISSION_CAMERA)
 
     private fun setupOrientationEventListener() {
-        mOrientationEventListener = object : OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
-            override fun onOrientationChanged(orientation: Int) {
-                if (isDestroyed) {
-                    mOrientationEventListener.disable()
-                    return
-                }
-
-                val currOrient = when (orientation) {
-                    in 75..134 -> ORIENT_LANDSCAPE_RIGHT
-                    in 225..289 -> ORIENT_LANDSCAPE_LEFT
-                    else -> ORIENT_PORTRAIT
-                }
-
-                if (currOrient != mLastHandledOrientation) {
-                    val degrees = when (currOrient) {
-                        ORIENT_LANDSCAPE_LEFT -> 90
-                        ORIENT_LANDSCAPE_RIGHT -> -90
-                        else -> 0
+        mOrientationEventListener =
+            object : OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
+                override fun onOrientationChanged(orientation: Int) {
+                    if (isDestroyed) {
+                        mOrientationEventListener.disable()
+                        return
                     }
 
-                    animateViews(degrees)
-                    mLastHandledOrientation = currOrient
+                    val currOrient = when (orientation) {
+                        in 75..134 -> ORIENT_LANDSCAPE_RIGHT
+                        in 225..289 -> ORIENT_LANDSCAPE_LEFT
+                        else -> ORIENT_PORTRAIT
+                    }
+
+                    if (currOrient != mLastHandledOrientation) {
+                        val degrees = when (currOrient) {
+                            ORIENT_LANDSCAPE_LEFT -> 90
+                            ORIENT_LANDSCAPE_RIGHT -> -90
+                            else -> 0
+                        }
+
+                        animateViews(degrees)
+                        mLastHandledOrientation = currOrient
+                    }
                 }
             }
-        }
     }
 
     private fun animateViews(degrees: Int) {
-        val views = arrayOf<View>(toggle_camera, toggle_flash, toggle_photo_video, change_resolution, shutter, settings, last_photo_video_preview)
+        val views = arrayOf<View>(
+            toggle_camera,
+            toggle_flash,
+            toggle_photo_video,
+            change_resolution,
+            shutter,
+            settings,
+            last_photo_video_preview
+        )
         for (view in views) {
             rotate(view, degrees)
         }
     }
 
-    private fun rotate(view: View, degrees: Int) = view.animate().rotation(degrees.toFloat()).start()
+    private fun rotate(view: View, degrees: Int) =
+        view.animate().rotation(degrees.toFloat()).start()
 
     private fun checkCameraAvailable(): Boolean {
         if (!mIsCameraAvailable) {
@@ -544,12 +598,25 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener {
 
     override fun mediaSaved(path: String) {
         rescanPaths(arrayListOf(path)) {
+
+            var i=0
             setupPreviewImage(true)
             Intent(BROADCAST_REFRESH_MEDIA).apply {
+                putExtra(REFRESH_PATH, path)
+                }
+
+            // picture[i]=path
+
+            val intent = Intent(this, UploadImageActivity::class.java).apply {
                 putExtra(REFRESH_PATH, path)
                 `package` = "com.simplemobiletools.gallery"
                 sendBroadcast(this)
             }
+
+            startActivity(intent)
+
+
+
         }
 
         if (isImageCaptureIntent()) {

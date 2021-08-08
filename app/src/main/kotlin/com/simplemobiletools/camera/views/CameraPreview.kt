@@ -404,10 +404,10 @@ class CameraPreview : ViewGroup, TextureView.SurfaceTextureListener, MyPreview {
         }
 
         return when {
-            bigEnough.isNotEmpty() -> bigEnough.minBy { it.width * it.height }!!
-            notBigEnough.isNotEmpty() -> notBigEnough.maxBy { it.width * it.height }!!
-            bigEnoughIncorrectAR.isNotEmpty() -> bigEnoughIncorrectAR.minBy { it.width * it.height }!!
-            notBigEnoughIncorrectAR.isNotEmpty() -> notBigEnoughIncorrectAR.maxBy { it.width * it.height }!!
+            bigEnough.isNotEmpty() -> bigEnough.minByOrNull { it.width * it.height }!!
+            notBigEnough.isNotEmpty() -> notBigEnough.minByOrNull{ it.width * it.height }!!
+            bigEnoughIncorrectAR.isNotEmpty() -> bigEnoughIncorrectAR.minByOrNull { it.width * it.height }!!
+            notBigEnoughIncorrectAR.isNotEmpty() -> notBigEnoughIncorrectAR.minByOrNull { it.width * it.height }!!
             else -> selectedResolution.toSize()
         }
     }
